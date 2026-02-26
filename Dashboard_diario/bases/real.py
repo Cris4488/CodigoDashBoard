@@ -1,5 +1,5 @@
-import time,pandas as pd, os    
-from ..general.generales import Get_Path_Documents, Get_Token_Azure, Get_Site_Id, Get_Drive_Id, Get_File_SH
+import datetime,requests,time,pandas as pd, os    
+from general.generales import Get_Path_Documents, Get_Token_Azure, Get_Site_Id, Get_Drive_Id, Get_File_SH
 
 tenant_id = os.getenv('TENANT_ID')
 client_id = os.getenv('CLIENT_ID_SHAREPOINT')
@@ -59,41 +59,53 @@ def Get_Data(headers, site_id):
 #     print("Inventario de Etiquetas de CO's obtenido correctamente...")
 #     return inv_etiq
 
-# def Request_Consumo_Etiquetas(token, fincas, reglas_etiquetas, dias, ShipLoc):
-#     consumo_total = pd.DataFrame()
-#     i = 0
-#     while True:
-#         start_date = (datetime.datetime.today() + datetime.timedelta(i)).strftime("%m-%d-%Y")
-#         end_date = (datetime.datetime.today() + datetime.timedelta(i+15)).strftime("%m-%d-%Y")
-#         query = f"""
-#             query {{
-#                 labelsConsumption(
-#                     where: {{start_date: "{start_date}", end_date: "{end_date}", countryIds: "0"}}
-#                 ) {{
-#                     customer_number
-#                     department
-#                     farm_id
-#                     has_ethyblock
-#                     market_type_id
-#                     master_location_id
-#                     product_type
-#                     quantity
-#                     quantity_wo_pieces
-#                     sa_production_date
-#                     ship_location_id
-#                     ship_to_city
-#                 }}
-#             }}
-#         """
-#         consumo = pd.DataFrame(Execute_Query(token, query, 'labelsConsumption')).fillna('')
-#         consumo_total = pd.concat([consumo_total, consumo], ignore_index=True)
-#         i += 15
-#         if i >= dias:
-#             break
-#     consumo_total = Edit_Consumo_Etiquetas(consumo_total, reglas_etiquetas, fincas, ShipLoc)
-#     consumo_total.to_csv(directorio + '\\Bases\\Running\\Consumo Etiquetas.csv', index=False)
-#     print("Consumo de etiquetas obtenido correctamente...")
-#     return consumo_total
+def Execute_Query(token, query: str, type_query: str):
+    url_graph = 'https://apigrq-integrationhub.azurewebsites.net/graphql/'
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "PostmanRuntime/7.43.4",
+        "Authorization": f"Bearer {token}"
+    }
+    response = requests.post(url_graph, json={"query": query}, headers=headers)
+    response.raise_for_status()
+    return pd.DataFrame(response.json().get("data", {}).get(type_query, []))
+
+def Request_Consumo_Etiquetas(token, fincas, reglas_etiquetas, dias, ShipLoc,directorio):
+    consumo_total = pd.DataFrame()
+    i = 0
+    while True:
+        start_date = (datetime.datetime.today() + datetime.timedelta(i)).strftime("%m-%d-%Y")
+        end_date = (datetime.datetime.today() + datetime.timedelta(i+15)).strftime("%m-%d-%Y")
+        query = f"""
+            query {{
+                labelsConsumption(
+                    where: {{start_date: "{start_date}", end_date: "{end_date}", countryIds: "0"}}
+                ) {{
+                    customer_number
+                    department
+                    farm_id
+                    has_ethyblock
+                    market_type_id
+                    master_location_id
+                    product_type
+                    quantity
+                    quantity_wo_pieces
+                    sa_production_date
+                    ship_location_id
+                    ship_to_city
+                }}
+            }}
+        """
+        consumo = Execute_Query(token, query, 'labelsConsumption').fillna('')
+        consumo_total = pd.concat([consumo_total, consumo], ignore_index=True)
+        i += 15
+        if i >= dias:
+            break
+    # consumo_total = Edit_Consumo_Etiquetas(consumo_total, reglas_etiquetas, fincas, ShipLoc)
+    consumo_total.to_csv(directorio + '\\Bases\\Running\\Consumo Etiquetas.csv', index=False)
+    print("Consumo de etiquetas obtenido correctamente...")
+    return consumo_total
 
 # def Edit_Consumo_Etiquetas(consumo: pd.DataFrame, reglas_etiquetas: pd.DataFrame, fincas: pd.DataFrame, ShipLoc: pd.DataFrame):
 #     consumo = consumo.rename(columns={'customer_number': 'Cliente', 'ship_location_id': 'Destino', 'ship_to_city': 'Ciudad', 'sa_production_date': 'Fecha', 'product_type': 'Dry/Wet', 'quantity_wo_pieces': 'usage', 'department': 'Dept', 'master_location_id': 'Master Location', 'has_ethyblock': 'Ethyblock'})
