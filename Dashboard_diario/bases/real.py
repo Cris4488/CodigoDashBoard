@@ -1,5 +1,5 @@
 import datetime,requests,time,pandas as pd, os    
-from general.generales import Get_Path_Documents, Get_Token_Azure, Get_Site_Id, Get_Drive_Id, Get_File_SH
+from ..general.generales import Get_Path_Documents, Get_Token_Azure, Get_Site_Id, Get_Drive_Id, Get_File_SH
 
 tenant_id = os.getenv('TENANT_ID')
 client_id = os.getenv('CLIENT_ID_SHAREPOINT')
@@ -103,7 +103,7 @@ def Request_Consumo_Etiquetas(token, fincas, reglas_etiquetas, dias, ShipLoc,dir
         if i >= dias:
             break
     # consumo_total = Edit_Consumo_Etiquetas(consumo_total, reglas_etiquetas, fincas, ShipLoc)
-    consumo_total.to_csv(directorio + '\\Bases\\Running\\Consumo Etiquetas.csv', index=False)
+    consumo_total.to_csv(directorio + '\\Bases\\Consumo Etiquetas.csv', index=False)
     print("Consumo de etiquetas obtenido correctamente...")
     return consumo_total
 
@@ -169,4 +169,4 @@ def Request_Consumo_Etiquetas(token, fincas, reglas_etiquetas, dias, ShipLoc,dir
 #     xlApp.Run("Compra_Etiquetas.xlsb!Python.Actualizar_Running")
 #     xlApp.Run("Compra_Etiquetas.xlsb!Python.Msg_Fin")
 
-# Request_Bases(directorio, tenant_id, client_id, client_secret)
+Request_Bases(directorio, tenant_id, client_id, client_secret)
